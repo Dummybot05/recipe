@@ -1,127 +1,165 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<title>Recipe Recommended</title>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="This is a description of my website.">
-<meta name="keywords" content="HTML, CSS, JavaScript">
-<link rel="stylesheet" href="style.css">
-<link rel="icon" href="favicon.ico" type="image/x-icon"> 
+  <title>Recipe Recommended</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Discover new recipes based on the ingredients you have.">
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="favicon.ico" type="image/x-icon"> 
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
 </head>
 <body>
-<div id="container">
-<h1>Recipe Recommendation</h1>
-<input placeholder="Enter Ingredients ' , '(comma) separated" id="input-data" value="tomato,cabbage,peas" required />
-<select default="10" id="input-data2">
-<option value="10" >10 Recipes</option>
-<option value="20" >20 Recipes</option>
-<option value="40" >40 Recipes</option>
-<option value="80" >80 Recipes</option>
-<option value="100" >Max Recipes</option>
-</select>
-<button id="main-btn">Search Recipes</button>
-<div id="data-con"></div>   
-</div>    
-<div id="view-full" onclick="chn(event)"></div>
+
+  <div id="container">
+    <h1>What's in your fridge?</h1>
+    <p class="subtitle">Enter your ingredients to find delicious recipes.</p>
+    
+    <div class="input-group">
+      <input placeholder="e.g. tomato, cabbage, peas" id="input-data" value="tomato,cabbage,peas" required />
+      <select id="input-data2">
+        <option value="10">10 Recipes</option>
+        <option value="20">20 Recipes</option>
+        <option value="40">40 Recipes</option>
+        <option value="80">80 Recipes</option>
+        <option value="100">Max Recipes</option>
+      </select>
+    </div>
+    <button id="main-btn">Search Recipes</button>
+  </div>    
+
+  <div id="data-con"></div>   
+
+  <div id="view-full" onclick="chn(event)"></div>
     
 <script>
-
 function show(url) {
- document.getElementById("data-con").innerHTML='';
+ document.getElementById("data-con").innerHTML = '<p class="loading">Fetching delicious recipes...</p>';
  fetch(url)
  .then(res => res.json())
  .then(data => {
-   data.forEach((item) => {
+   document.getElementById("data-con").innerHTML = ''; // Clear loading text
    
+   if(data.length === 0) {
+       document.getElementById("data-con").innerHTML = '<p class="loading">No recipes found. Try different ingredients!</p>';
+       return;
+   }
+
+   data.forEach((item) => {
     let uI = '';
     let uIImg = '';
     item.usedIngredients.forEach(i => {
-      uI += `<li>${i.originalName}</li>`;
-      uIImg += `<img src=${i.image} />`;
+      uI += `<span class="tag tag-used">${i.originalName}</span>`;
+      uIImg += `<img src="${i.image}" alt="${i.originalName}" />`;
     })
 
     let mI = '';
     let mIImg = '';
     item.missedIngredients.forEach(i => {
-      mI += `<li>${i.originalName}</li>`;
-      mIImg += `<img src=${i.image} />`;
+      mI += `<span class="tag tag-missed">${i.originalName}</span>`;
+      mIImg += `<img src="${i.image}" alt="${i.originalName}" />`;
     })
     
-   document.getElementById("data-con").innerHTML += `<div>
-        <img src=${item.image} />
-        <h1>${item.title}</h1>
-        <h5>Used Ingredients</h5>
-        <ul>${uI}</ul>
-        <div>${uIImg}</div>
-        <h5>Missed Ingredients</h5>
-        <ul>${mI}</ul>
-        <div>${mIImg}</div>
-        <button onclick='show2(${item.id}, "${item.title}", "${item.image}")'>View full Recipe</button>
+   document.getElementById("data-con").innerHTML += `
+      <div class="recipe-card">
+        <img class="main-img" src="${item.image}" alt="${item.title}" />
+        <div class="card-content">
+            <h3>${item.title}</h3>
+            
+            <div class="section-title">Used Ingredients</div>
+            <div class="tags-container">${uI}</div>
+            <div class="img-scroller">${uIImg}</div>
+            
+            <div class="section-title">Missing Ingredients</div>
+            <div class="tags-container">${mI}</div>
+            <div class="img-scroller">${mIImg}</div>
+            
+            <button class="view-btn" onclick='show2(${item.id}, "${item.title.replace(/'/g, "\\'")}", "${item.image}")'>View Full Recipe</button>
+        </div>
       </div>`;            
    })
- })
+ }).catch(err => {
+    document.getElementById("data-con").innerHTML = '<p class="loading">Error loading recipes. Please try again.</p>';
+ });
 }
 
 function show2(id, title, img) {
   var url = `https://api.spoonacular.com/recipes/${id}/information?includeNutrition=false&apiKey=3880a8fda53546d18d9b18b1b8fae659`;
+  
+  document.getElementById("view-full").innerHTML = `<div class="modal-content"><p class="loading">Loading recipe details...</p></div>`;
+  document.getElementById("view-full").style.visibility = 'visible';
+  document.getElementById("view-full").style.opacity = '1';
+
   fetch(url)
   .then(res => res.json())
   .then(data => {
   
    let recipeInfoHTML = `
-    <li>Title: ${data.title}</li>
-    <li>Servings: ${data.servings}</li>
-    <li>Ready In Minutes: ${data.readyInMinutes}</li>
-    <li>Price Per Serving: $${data.pricePerServing}</li>
-    <li>Aggregate Likes: ${data.aggregateLikes}</li>
-    <li>Health Score: ${data.healthScore}</li>
-    <li>Source: ${data.sourceName}</li>
-    <li>License: ${data.license}</li>
-    <li>Source URL: <a href="${data.sourceUrl}" target="_blank">${data.title} Recipe</a></li>
-`;
+    <li><strong>Servings:</strong> ${data.servings}</li>
+    <li><strong>Ready In:</strong> ${data.readyInMinutes} mins</li>
+    <li><strong>Price Per Serving:</strong> $${(data.pricePerServing / 100).toFixed(2)}</li>
+    <li><strong>Health Score:</strong> ${data.healthScore}/100</li>
+    <li><strong>Source:</strong> <a href="${data.sourceUrl}" target="_blank">${data.sourceName || 'Original Recipe'}</a></li>
+   `;
 
   let ingredientsHTML = '';
   data.extendedIngredients.forEach(ingr => {
-  ingredientsHTML += `
-     <li>${ingr.original}</li>
-  `;
-});
+    ingredientsHTML += `<li>${ingr.original}</li>`;
+  });
 
   let instructionsHTML = '';
- data.analyzedInstructions[0].steps.forEach(step => {
-  instructionsHTML += `<li>${step.step}</li>`;
-});
+  if (data.analyzedInstructions && data.analyzedInstructions.length > 0) {
+      data.analyzedInstructions[0].steps.forEach(step => {
+        instructionsHTML += `<li>${step.step}</li>`;
+      });
+  } else {
+      instructionsHTML = `<li>No instructions provided. <a href="${data.sourceUrl}" target="_blank">Check the source link</a>.</li>`;
+  }
 
   document.getElementById("view-full").innerHTML = `
-  <div>
-     <div>×</div>
-     <h1>${title}</h1>
-     <img src=${img} />
-     <h4>Recipe Information:</h4>
-     <ul>${recipeInfoHTML}</ul>
-     <h4>Ingredients:</h4>
-     <ul>${ingredientsHTML}</ul>
-     <h4>Instructions</h4>
-     <ol>${instructionsHTML}</ol>
-     <h1>There you go..</h1>
+  <div class="modal-content">
+     <div class="close-btn" onclick="closeModal()">×</div>
+     <img class="modal-img" src="${img}" alt="${title}" />
+     <div class="modal-body">
+         <h2>${title}</h2>
+         
+         <div class="info-grid">
+             <ul>${recipeInfoHTML}</ul>
+         </div>
+
+         <h4>Ingredients</h4>
+         <ul class="ingredient-list">${ingredientsHTML}</ul>
+
+         <h4>Instructions</h4>
+         <ol class="instruction-list">${instructionsHTML}</ol>
+     </div>
    </div>
 `;
   })
-  document.getElementById("view-full").style.visibility = 'visible';
 }
 
 function chn(event) {
-    event.currentTarget.style.visibility = 'hidden';
+    // Only close if clicking the dark background, not the white modal itself
+    if(event.target.id === 'view-full') {
+        closeModal();
+    }
+}
+
+function closeModal() {
+    document.getElementById("view-full").style.opacity = '0';
+    setTimeout(() => {
+        document.getElementById("view-full").style.visibility = 'hidden';
+    }, 300); // Wait for fade out
 }
 
 document.getElementById("main-btn").addEventListener("click", () => {
    var inp1 = document.getElementById("input-data");
    var inp2 = document.getElementById("input-data2");
+   if(!inp1.value.trim()) return alert("Please enter some ingredients!");
+   
    var url = `https://api.spoonacular.com/recipes/findByIngredients?apiKey=3880a8fda53546d18d9b18b1b8fae659&ingredients=${inp1.value}&number=${inp2.value}`;
   show(url);
 })
-
 </script>
 </body>
 </html>
